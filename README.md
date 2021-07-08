@@ -1,6 +1,7 @@
-This fork add support for Standard Zip Encryption.
+This fork make SetEncryptionMethod public to align with standard
+zip lib. Operate header directly.
 
-The work is based on https://github.com/alexmullins/zip
+The work is based on https://github.com/yeka/zip
 
 Available encryption:
 
@@ -27,7 +28,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/yeka/zip"
+	"github.com/mars4myshare/zip"
 )
 
 func main() {
@@ -38,7 +39,29 @@ func main() {
 	}
 	zipw := zip.NewWriter(fzip)
 	defer zipw.Close()
-	w, err := zipw.Encrypt(`test.txt`, `golang`, zip.AES256Encryption)
+
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+                log.Fatalf("failed to get the file %s info header: %w", filepath, err)
+	}
+
+	// overwrite this with the full path.
+	header.Name = filename
+	// Change to deflate to gain better compression
+	// see http://golang.org/pkg/archive/zip/#pkg-constants
+	header.Method = zip.Deflate
+
+        // Specify the utf8
+	header.Flags = 1 << 11
+
+        header.SetPassword(pass)
+
+        // change: make this method public
+        header.SetEncryptionMethod(zip.StandardEncryption)
+
+
+	writer, err := zipWriter.CreateHeader(header)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,7 +83,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	"github.com/yeka/zip"
+	"github.com/mars4myshare/zip"
 )
 
 func main() {
